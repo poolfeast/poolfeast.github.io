@@ -3,5 +3,5 @@ theme: jekyll-theme-minimal
 name: Jack Williams
 title: Projects
 markdown: kramdown
-description: The great thing about procrastination is that you don't have any excuse to put it off.
-logo: /assets/img/logo.png
+#description: The great thing about procrastination is that you don't have any excuse to put it off.
+logo: /assets/img/logo.jpg
