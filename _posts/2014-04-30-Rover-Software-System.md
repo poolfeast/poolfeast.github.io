@@ -12,6 +12,7 @@ For RMIT's first entry into the Univeristy Rover Competition we needed a softwar
 * Save State / Restore State on hard reboot or crashes. To allow recovery of partially completed missions.
 * Have a failsafe watchdog, so crashes or lock ups should be externally detectable and will cause the component to be killed and restarted. This will be a part of the C&C interface.
 * Have language agnostic IPC (generally linux IPC). As described in the Design Document or the System Diagram.
+
 # Summary
 Each component inside the Jetson, except for the Command and OS components, functions in a similar environment. With their startup, command input/output and monitoring managed by the central Command component, which has access to the serial link or rover bus.
 The system is arranged like this to allow each of the managed components to be isolated, and hence developed independently of the hardware and each other.
