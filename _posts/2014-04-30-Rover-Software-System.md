@@ -1,17 +1,24 @@
 ---
 layout: post
-title: "University Rover Competition Onboard Computer Architecture"
+title: "URC Onboard Computer Architecture"
 date: 2019-08-30
 ---
+For RMIT's first entry into the Univeristy Rover Competition we needed a software system that could be implemented quickly, but wouldn't hamper later development with architecture redesigns.
 # Requirements
-For RMIT's first entry into the URC we needed a software system that could be implemented quickly, but wouldn't hamper later development with architecture redesigns.
-
-![Rover Software System Diagram](/assets/img/Rover System2.svg)
-
+* Rapid prototyping / Move Fast
+* Components individually testable access to real hardware
+* The system layout should last multiple competitions, while components may not. The underlying design should be adaptable enough to facilitate this.
+* Latency is very important for components involved with manual control, otherwise its not to be worried about at this stage. (Video Streaming, Platform Controller)
+* Save State / Restore State on hard reboot or crashes. To allow recovery of partially completed missions.
+* Have a failsafe watchdog, so crashes or lock ups should be externally detectable and will cause the component to be killed and restarted. This will be a part of the C&C interface.
+* Have language agnostic IPC (generally linux IPC). As described in the Design Document or the System Diagram.
 # Summary
 Each component inside the Jetson, except for the Command and OS components, functions in a similar environment. With their startup, command input/output and monitoring managed by the central Command component, which has access to the serial link or rover bus.
 The system is arranged like this to allow each of the managed components to be isolated, and hence developed independently of the hardware and each other.
-To further remove interdependence of components, only native Linux methods of inter-process communication are used. Such as memory mapped files and stdin/stdout. This allows different languages and libraries to be used for each component without anyone having to make allowances in their component for features or libraries that may not be available in other components. 
+To further remove interdependence of components, only native Linux methods of inter-process communication are used. Such as memory mapped files and stdin/stdout. This allows different languages and libraries to be used for each component without anyone having to make allowances in their component for features or libraries that may not be available in other components.
+
+![Rover Software System Diagram](/assets/img/Rover System2.svg) 
+
 # Features
 ## State Storage and Recovery
 The components store their state in a particular location on disk with enough detail to allow them to finish a partially completed mission even if the power to the system is interrupted.
