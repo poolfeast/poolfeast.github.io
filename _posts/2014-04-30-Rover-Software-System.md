@@ -1,9 +1,12 @@
 ---
 layout: post
 title: "URC Onboard Computer Architecture"
+excerpt_separator: <!--summary-->
 date: 2019-08-30
 ---
 For RMIT's first entry into the Univeristy Rover Competition we needed a software system that could be implemented quickly, but wouldn't hamper later development with architecture redesigns.
+ <!--summary-->
+
 # Requirements
 * Rapid prototyping / Move Fast
 * Components individually testable access to real hardware
