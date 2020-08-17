@@ -4,25 +4,42 @@ title: "URC Onboard Computer Architecture"
 excerpt_separator: <!--summary-->
 date: 2019-08-30
 ---
-For RMIT's first entry into the University Rover Competition we needed a software system that could be implemented quickly, but wouldn't hamper later development with architecture redesigns.
+The University Rover Challenge takes place once a year, at the Mars Desert Research Station in America. It requires teams to construct autonomous exploration robots thats compete in a number of tests requiring object manipulation, life detection, and autonomous traversal.
+For RMIT's first entry into the URC we needed a software system that could be implemented quickly, but wouldn't hamper later development with architecture redesigns.
  <!--summary-->
 
-# Requirements
-* Rapid prototyping / Move Fast
-* Components individually testable access to real hardware
-* The system layout should last multiple competitions, while components may not. The underlying design should be adaptable enough to facilitate this.
-* Latency is very important for components involved with manual control, otherwise its not to be worried about at this stage. (Video Streaming, Platform Controller)
-* Save State / Restore State on hard reboot or crashes. To allow recovery of partially completed missions.
-* Have a failsafe watchdog, so crashes or lock ups should be externally detectable and will cause the component to be killed and restarted. This will be a part of the C&C interface.
-* Have language agnostic IPC (generally linux IPC). As described in the Design Document or the System Diagram.
+As the teams first software lead, it was my job to establish requirements and come up with an initial concept. With help from some academics, other students, and studies of previous URC entries I developed an onboard computer software and hardware architecture. 
 
-# Solution
+[![PCz Rover](/assets/img/PCz Rover.jpg)](/assets/img/PCz Rover.jpg)
+*The Politechnika Częstochowska Team Rover. Note the extremely compact body with high ground clearance. Internally, they also use custom PCB embedded controllers for all their computer peripherals. Maybe in a few years...*
+
+# Requirements
+The competition involves both manual control and autonomous control stages, so control over rover systems such as the wheels needed to be shared. 
+We had less then a year before the design had to be entered into the URC, so time was short. And meeting up in person was difficult for several reasons.
+
+* Rapid prototyping, the system must be able to be developed quickly.
+* Software components individually testable, without access to real hardware. Software team members would need to work in parallel to meet the deadline. 
+* The system layout should last multiple competitions, so the underlying design should be adaptable enough to facilitate this. Initial software components will be low quality due to the time constraints, and their replacement is inevitable.
+* Latency is very important for components involved with manual control, otherwise its not to be worried about at this stage. (Video Streaming, Platform Controller)
+* Issues with individual software components should be recoverable, without manual intervention. Because radio contact to the rover is not guaranteed. These issues may take the form of crashes or hangs from any level of the software stack.
+
+# Solutions
 ## Summary
+* Have language agnostic IPC (generally linux IPC).
+
+* Have a failsafe watchdog, so crashes or lock ups should be externally detectable and will cause the component to be killed and restarted. This will be a part of the C&C interface.
+
+* The individual software components must be able to save and restore state on hard reboot or crashes. To allow recovery of partially completed missions.
+
 Each component inside the Jetson, except for the Command and OS components, functions in a similar environment. With their startup, command input/output and monitoring managed by the central Command component, which has access to the serial link or rover bus.
 The system is arranged like this to allow each of the managed components to be isolated, and hence developed independently of the hardware and each other.
 To further remove interdependence of components, only native Linux methods of inter-process communication are used. Such as memory mapped files and stdin/stdout. This allows different languages and libraries to be used for each component without anyone having to make allowances in their component for features or libraries that may not be available in other components.
 
 [![Rover Software System Diagram](/assets/img/Rover System.svg)](/assets/img/Rover System.svg)
+*RMIT's rover software system diagram, the product of many iterations*
+
+## Hardware and Overall Layout
+
 
 ## Features
 ### State Storage and Recovery
