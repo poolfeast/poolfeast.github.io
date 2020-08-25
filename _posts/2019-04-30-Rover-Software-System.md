@@ -13,33 +13,47 @@ As the teams first software lead, it was my job to establish requirements and co
 [![PCz Rover](/assets/img/PCz Rover.jpg)](/assets/img/PCz Rover.jpg)
 *The Politechnika Częstochowska Team Rover. Note the extremely compact body with high ground clearance. Internally, they also use custom PCB embedded controllers for all their computer peripherals. Maybe in a few years...*
 
-# Requirements
 The competition involves both manual control and autonomous control stages, so control over rover systems such as the wheels needed to be shared. 
 We had less then a year before the design had to be entered into the URC, so time was short. And meeting up in person was difficult for several reasons.
 
+The decision to separate the computer system into a embedded platform controller and a multitasking OS main processor was made early on. As the complexities of dealing with realtime tasks on a device that also supports a novice development environment (ie python) were too high. Linux with a realtime kernel patch was evaluated for this.
+
+[![Rover Onboard Diagram](/assets/img/Rover System.svg)](/assets/img/Rover System.svg)
+*RMIT's rover onboard system diagram*
+
+To support two separate teams (software and embedded) working on these two computers, two separate wireless links are used. One low bandwidth command link is used for the platform controller, which acts as a bus to distribute the messages coming in from the ground as well as internal messages.
+The high bandwidth link is transmit only, and is used for video, autonomous map data and computer debugging output.
+
+After the initial design for the above system was created, my focus moved to the software team specific areas.
+Given the above system, the following main computer requirements were distilled for the software team:
+
+# Requirements
+## Main Computer Software System
 * Rapid prototyping, the system must be able to be developed quickly.
 * Software components individually testable, without access to real hardware. Software team members would need to work in parallel to meet the deadline. 
 * The system layout should last multiple competitions, so the underlying design should be adaptable enough to facilitate this. Initial software components will be low quality due to the time constraints, and their replacement is inevitable.
 * Latency is very important for components involved with manual control, otherwise its not to be worried about at this stage. (Video Streaming, Platform Controller)
 * Issues with individual software components should be recoverable, without manual intervention. Because radio contact to the rover is not guaranteed. These issues may take the form of crashes or hangs from any level of the software stack.
+## Main Computer Hardware
+* Due to the latencies required, hardware accelerated video encoding must be present on the main processor.
+* The computer must have hardware CAN support
+* Some form of hardware acceleration for general purpose matrix operations is required. As deep learning and image processing task latency can benefit significantly.
 
 # Solutions
 ## Summary
+* Nvidia Jetson SBC for main computer
 * Have language agnostic IPC (generally linux IPC).
-
 * Have a failsafe watchdog, so crashes or lock ups should be externally detectable and will cause the component to be killed and restarted. This will be a part of the C&C interface.
-
 * The individual software components must be able to save and restore state on hard reboot or crashes. To allow recovery of partially completed missions.
+
+[![Rover Software System Diagram](/assets/img/Rover Main Computer System.svg)](/assets/img/Rover Main Computer System.svg)
+*RMIT's rover software system diagram, the product of many iterations*
 
 Each component inside the Jetson, except for the Command and OS components, functions in a similar environment. With their startup, command input/output and monitoring managed by the central Command component, which has access to the serial link or rover bus.
 The system is arranged like this to allow each of the managed components to be isolated, and hence developed independently of the hardware and each other.
 To further remove interdependence of components, only native Linux methods of inter-process communication are used. Such as memory mapped files and stdin/stdout. This allows different languages and libraries to be used for each component without anyone having to make allowances in their component for features or libraries that may not be available in other components.
 
-[![Rover Software System Diagram](/assets/img/Rover System.svg)](/assets/img/Rover System.svg)
-*RMIT's rover software system diagram, the product of many iterations*
-
-## Hardware and Overall Layout
-
+Read on for a further explanation of the various software solutions and how they are implemented.
 
 ## Features
 ### State Storage and Recovery
