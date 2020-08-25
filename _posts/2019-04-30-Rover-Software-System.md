@@ -18,7 +18,7 @@ We had less then a year before the design had to be entered into the URC, so tim
 
 The decision to separate the computer system into a embedded platform controller and a multitasking OS main processor was made early on. As the complexities of dealing with realtime tasks on a device that also supports a novice development environment (ie python) were too high. Linux with a realtime kernel patch was evaluated for this.
 
-[![Rover Onboard Diagram](/assets/img/Rover System.svg)](/assets/img/Rover System.svg)
+[![Rover Onboard Diagram](/assets/img/Rover Computer System.svg)](/assets/img/Rover Computer System.svg)
 *RMIT's rover onboard system diagram*
 
 To support two separate teams (software and embedded) working on these two computers, two separate wireless links are used. One low bandwidth command link is used for the platform controller, which acts as a bus to distribute the messages coming in from the ground as well as internal messages.
@@ -34,6 +34,7 @@ Given the above system, the following main computer requirements were distilled 
 * The system layout should last multiple competitions, so the underlying design should be adaptable enough to facilitate this. Initial software components will be low quality due to the time constraints, and their replacement is inevitable.
 * Latency is very important for components involved with manual control, otherwise its not to be worried about at this stage. (Video Streaming, Platform Controller)
 * Issues with individual software components should be recoverable, without manual intervention. Because radio contact to the rover is not guaranteed. These issues may take the form of crashes or hangs from any level of the software stack.
+
 ## Main Computer Hardware
 * Due to the latencies required, hardware accelerated video encoding must be present on the main processor.
 * The computer must have hardware CAN support
