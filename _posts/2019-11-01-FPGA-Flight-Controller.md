@@ -16,10 +16,6 @@ However my supervisor and I came up with a really exciting design, and my enthus
 
 Along the way I learning a lot about hardware debugging and the general FPGA design concepts.
 
-Please see the below report for more information on the project.
-
-[*My Official FYP Report*](/assets/doc/FPGA Final Report.pdf)
-
 ### Quick Feature Summary
 * Offload interrupt driven tasks into hardware, reducing software complexity
 	* Timers
@@ -30,6 +26,8 @@ Please see the below report for more information on the project.
 * Offload complex recurring operations into hardware
 	* Kalman Filters
 	* PID Controllers
+
+[Please see the report for more information](/assets/doc/FPGA Final Report.pdf)
 
 
 [![Project Poster](/assets/img/FPGA Poster.svg)](/assets/img/FPGA Poster.svg)
