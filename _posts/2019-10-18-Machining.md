@@ -21,7 +21,6 @@ It involved four or five tool changes, with the path calculation method, size, a
 [![2D YinYang](/assets/img/Machining YinYang.jpg)](/assets/img/Machining YinYang.jpg)
 My first CNC part, done with hand-written g-codes. Some of the wood at the pointy sections was too thin and chipped off. Otherwise its pretty good.
 
-{% highlight %}
 G90 G21 G17
 G40 G80
 G91 G28 X0. Y0. Z0.
@@ -47,4 +46,3 @@ G49 M05
 G91 G28 X0. Y0. Z0.
 G90 
 M30
-{% endhighlight %}
