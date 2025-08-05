@@ -1,7 +1,7 @@
 theme: jekyll-theme-minimal
 
 name: Jack Williams
-title: Jack Williams, Appendix 1
+title: Jack Williams
 markdown: kramdown
-description: A space for things I'm up to
+# description: A space for things I'm up to
 logo: /assets/img/Mii.jpg
