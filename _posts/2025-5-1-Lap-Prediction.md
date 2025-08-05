@@ -26,101 +26,101 @@ Scroll to bottom for hardware details and race footage!
 One useful and common metric is "predicted laptime".
 
 The definition of predicted laptime, for the purpose of this project, is defined as:  
-"If the remainder of your current lap was done as well as your best lap, what would that laptime be?"
+>If the remainder of your current lap was done like the reference lap, what would that laptime be?
 
 You might be familiar with laptime prediction from the "lap delta" estimates on video games or race broadcasts.
-It is often shown as seconds relative to best lap, so the user doesn't have to remember typical lap times for that track.
+It is usually shown as seconds relative to the best/reference lap, so the user doesn't have to remember typical lap times for that track.
 
 This value is very useful in real time.  
 For example, if the value becomes more positive during a corner, you can be confident your strategy for the corner is worse than your best.
 
-Also useful, especially for slower cars like ours, is a velocity delta value. Returning the difference between your current speed and the equivalent point in your best lap. 
+Also useful, especially for slower cars like ours, is a velocity delta value. Returning the difference between your current speed and the equivalent point in your reference lap. 
 
 # Algorithm Details
 
 The process for predicting laptime is as follows:[^1]
-1. New GPS position and velocity states are captured
-2. The stored reference/best lap is queried to find the time in the reference lap where the vehicle was at a comparable point
+1. New GPS position and velocity states[^3] are captured
+2. The stored best/reference lap is queried to find the time in the reference lap where the vehicle was at a comparable point
 3. The time remaining after this point in the reference lap is added to the current laptime
+
+[^1]: Calculation of current laptime and recording of reference lap data is less interesting so I haven't covered it.
 
 For step 2, two decisions need to be made. Reference lap representation and comparable point definition.
 
-We'll start with lap representation, as this also heavily informs the algorithm for intersection finding.
-
-[^1]: Calculation of current laptime and recording of best lap data is less interesting so I haven't covered it.
+We'll start with selecting lap representation, as this also heavily informs the algorithm for finding the comparable point.
 
 ## Lap representation
 
-If we assume that reference laps consist of GPS position and velocity values. Then the simplest way to represent the lap would be to find the most suitable reference GPS sample and work with that.
+If we assume that reference laps consist of GPS position and velocity values. Then the simplest way to represent the lap would be to find the most suitable GPS sample from the reference lap and do all operations with that sample directly.
 
-Unfortunately, the GPS data rate is not high enough for accurate lap times, and interpolation between samples is required.  
-This will transform the discrete GPS samples into a continuous line approximating the vehicles path.
+Unfortunately, the resolution from this is not high enough for accurate lap times, and interpolation between samples is required.  
+IE: transforming the discrete GPS samples into a continuous line approximating the vehicles path.
 
-GPS sensors return both a position and velocity reading. These two readings are derived using different processes, and the velocity is not simply derived from position history like you might think.
-Therefore using velocity information can reduce the overall error. [Nice Racelogic summary](https://vboxautomotive.co.uk/index.php/en/how-does-it-work-gps-accuracy)
+The simplest method is linear interpolation between each sample.
 
-The most obvious (to me) interpolation method would be linear interpolation of both velocity and position independently between each point.
+A more complex method is "kinematic interpolation", which takes velocity data and assumes a constant acceleration to increase accuracy.[^2]
 
-There is no fundamental issue with this, and I never did any analysis to determine the magnitude of the errors you would see in practice.
-
-However, this project was for fun not for work. So I thought I could do better. Linear intersections might have easy, closed form solutions. Which I wanted to avoid.
-
-So I discovered a cubic interpolation method that combines both velocity and position data into a physically plausible shape. 
-
-https://www.researchgate.net/publication/283199429_Kinematic_interpolation_of_movement_data
-and 
-https://github.com/jedalong/pathinterpolatr
-
-It seems a bit too obscure, for something so generally applicable. Perhaps karman filters are used for this conventionally? Despite the unanswered questions, I pushed ahead with the first thing I liked. For science!
-
-It produces smooth curves that look like this:
-
+I've compared the two here, the black arrows indicate the velocity.
 [![Interpolation](/assets/img/Datalogger Interpolation.gif)](/assets/img/Datalogger Interpolation.gif)
 
-Here is the interpolation formula for a single axes, $$ x0 $$ representing the start position.
-Where the other terms are constants defining the lap points on either end.
-
+Here is the above kinematic interpolation formula for a single axes, all terms but $$ t $$ are constant during interpolation.  
 $$ f(t) = \mathtt{x0} + \frac{t^{3} \left( 2 \mathtt{x0} - 2 \mathtt{x1} + \mathtt{v0} \Delta + \mathtt{v1} \Delta \right)}{\Delta^{3}} + \frac{t^{2} \left(  - 3 \mathtt{x0} + 3 \mathtt{x1} + \left( \mathtt{v0} - \mathtt{v1} \right) \Delta - 3 \mathtt{v0} \Delta \right)}{\Delta^{2}} + t \mathtt{v0} $$
+
+I went with the kinematic interpolation, because it improves performance, and makes the algorithm more interesting to me!
+
+[^2]: 
+    I discovered a cubic interpolation method uses constant acceleration assumptions.
+
+    [The paper](https://www.researchgate.net/publication/283199429_Kinematic_interpolation_of_movement_data)  
+    [The code](https://github.com/jedalong/pathinterpolatr)
+
+    It seems a bit too obscure, for something so generally applicable. Perhaps karman filters are used for this conventionally? Despite the unanswered questions, I pushed ahead with the first thing I liked. For fun!
+
+[^3]:
+    Why capture velocity information?
+
+    GPS sensors return both a position and velocity reading. These two readings are derived using different processes, and the velocity is not simply derived from position history like you might think.
+    Therefore using velocity information can reduce the overall error. [Nice summary](https://vboxautomotive.co.uk/index.php/en/how-does-it-work-gps-accuracy)
+
 
 ## Equivalent Lap State Algorithm and Approach
 
+As explained earlier, when each new GPS sample arrives we need to "cut" our stored reference lap at a representative time within the lap.
 
-As each new GPS sample arrives, we need to "cut" our stored best lap path at a representative time within the lap.
+The reference lap time that "represents", or matches the new position and velocity we've received most closely is a open to interpretation.  
+I see at least two approaches, finding the time during the reference lap that is:
+1. Closest overall to the new sample, a simple 2D distance calculation ignoring current velocity
+2. Closest to the lateral axis, the point on the reference lap that lies on a line perpendicular to the current heading
 
-What best lap time "represents", or matches the new position and velocity we've received most closely is a open to interpretation. 
-
-I see at least two approaches, finding the time during the best lap that was...
-1. closest overall to the new sample, a simple 2D distance calculation ignoring current velocity
-2. laterally closest, the point on the best lap that lies on a line perpendicular to the current heading.
-
+I've compared the two approaches here:
 [![Rootfinding](/assets/img/Datalogger Rootfinding.gif)](/assets/img/Datalogger Rootfinding.gif)
 
+The graph also shows a nonlinear solver trying to locate the intersection as in Method 2. It's initial guess is 0.5.
 
-The solution to the problem is the time within the best lap that produces a vehicle position on the line.
+Things to note:
+- The distance curve from Method 1 looks harder to solve, the inflection point will likely take more evaluations to find.
+- Method 1 is also more vulnerable to false convergence, you don't know you've found the best solution available. Whereas for Method 2 any solution is okay.
+- For Method 2, multiple solutions will exist, as the tracks are usually loops. But if you start your search at the previous solution, you should hit the correct one reliably.
+- For Method 2 in a corner, it might not be correct to say that one car on the inside and one on the outside are "comparable". But we can more easily assume lateral position on a straight doesn't have an impact. And drivers should be too busy to read the value during a corner anyway!
+- This example is contrived with a huge change in direction. For more realistic data the curves will approach linear and the solution will take fewer iterations to find.
+- In a corner, Method 1 and Method 2 may produce different results. As is the case in the visualisation.
 
-- Multiple solutions will exist, as the tracks are usually loops
-- In a corner, it might not be correct to say that one car on the inside and one on the outside will have the same lap time. But we assume lateral position on a straight doesn't have an impact. 
-- Drivers shouldn't be looking during a corner anyway
+I went with Method 2, because it seemed much more amenable to computational solutions.
 
-{diagram of a car on the track, with a line extending out the sides}
+To use a nonlinear solver we need a formula for the distance between a point (the position returned by our interpolation above), and a line perpendicular to a given angle.
 
+$$ f() = \left(  - \mathtt{Px} + \mathtt{tx} \right) sind\left( \mathtt{heading} \right) + \left(  - \mathtt{Py} + \mathtt{ty} \right) cosd\left( \mathtt{heading} \right) $$  
+[Source](https://en.wikipedia.org/wiki/Distance_from_a_point_to_a_line#Line_defined_by_point_and_angle)
 
-All we need is a formula for the distance between a point (the position returned by our interpolation above), and a line perpendicular to a given angle.
+I've modified the formula so that it takes heading angle, (which is 90 degrees from line angle) and so distances to points in the "heading" direction are positive.
 
-From: https://en.wikipedia.org/wiki/Distance_from_a_point_to_a_line#Line_defined_by_point_and_angle
+The interpolation formula is substituted into the distance formula to produce a very large equation[^4] used in the plot above.
 
-$$ f() = \left(  - \mathtt{Px} + \mathtt{tx} \right) sind\left( \mathtt{heading} \right) + \left(  - \mathtt{Py} + \mathtt{ty} \right) cosd\left( \mathtt{heading} \right) $$
+This equation should reach 0 when the time from the reference lap produces a vehicle position that lies on a line perpendicular to the vehicles heading.
 
-It's specified so that distances to points in the "heading" direction are positive.
-
-This a few desirable properties:
-- The vast majority of cases, these two lines will be effectively perpendicular.
-- (The solution gradients are very favorable for gradient based methods)
-- It should produce reasonable results during cornering (open to debate)
+[^4]: $$ \frac{ - \Delta^{3} \mathtt{Px} sind\left( \mathtt{heading} \right) - \Delta^{3} \mathtt{Py} cosd\left( \mathtt{heading} \right) + 2 t^{3} \mathtt{X0} sind\left( \mathtt{heading} \right) - 3 t^{2} \mathtt{X0} sind\left( \mathtt{heading} \right) \Delta + \Delta^{3} \mathtt{X0} sind\left( \mathtt{heading} \right) - 2 t^{3} \mathtt{X1} sind\left( \mathtt{heading} \right) + 3 t^{2} \mathtt{X1} sind\left( \mathtt{heading} \right) \Delta + 2 t^{3} \mathtt{Y0} cosd\left( \mathtt{heading} \right) - 3 t^{2} \mathtt{Y0} cosd\left( \mathtt{heading} \right) \Delta + \Delta^{3} \mathtt{Y0} cosd\left( \mathtt{heading} \right) - 2 t^{3} \mathtt{Y1} cosd\left( \mathtt{heading} \right) + 3 t^{2} \mathtt{Y1} cosd\left( \mathtt{heading} \right) \Delta + t^{3} \mathtt{vx0} sind\left( \mathtt{heading} \right) \Delta + t^{3} \mathtt{vx1} sind\left( \mathtt{heading} \right) \Delta + t^{3} \mathtt{vy0} cosd\left( \mathtt{heading} \right) \Delta + t^{3} \mathtt{vy1} cosd\left( \mathtt{heading} \right) \Delta - 2 \Delta^{2} t^{2} \mathtt{vx0} sind\left( \mathtt{heading} \right) - \Delta^{2} t^{2} \mathtt{vx1} sind\left( \mathtt{heading} \right) - 2 \Delta^{2} t^{2} \mathtt{vy0} cosd\left( \mathtt{heading} \right) - \Delta^{2} t^{2} \mathtt{vy1} cosd\left( \mathtt{heading} \right) + \Delta^{3} t \mathtt{vx0} sind\left( \mathtt{heading} \right) + \Delta^{3} t \mathtt{vy0} cosd\left( \mathtt{heading} \right)}{\Delta^{3}} $$
 
 # The Implementation
-
-{Image of the julia code converging}
 
 {screenshot of the lap test data and the stdout}
 
