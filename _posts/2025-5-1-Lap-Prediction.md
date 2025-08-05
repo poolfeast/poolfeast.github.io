@@ -49,7 +49,7 @@ For step 2, two decisions need to be made. Reference lap representation and comp
 
 We'll start with selecting lap representation, as this also heavily informs the algorithm for finding the comparable point.
 
-## Lap representation
+## Lap Representation
 
 If we assume that reference laps consist of GPS position and velocity values. Then the simplest way to represent the lap would be to find the most suitable GPS sample from the reference lap and do all operations with that sample directly.
 
@@ -60,7 +60,7 @@ The simplest method is linear interpolation between each sample.
 
 A more complex method is "kinematic interpolation", which takes velocity data and assumes a constant acceleration to increase accuracy.[^2]
 
-I've compared the two here, the black arrows indicate the velocity.
+I've compared the two here:
 [![Interpolation](/assets/img/Datalogger Interpolation.gif)](/assets/img/Datalogger Interpolation.gif)
 
 Here is the above kinematic interpolation formula for a single axes, all terms but $$ t $$ are constant during interpolation.  
@@ -82,8 +82,7 @@ I went with the kinematic interpolation, because it improves performance, and ma
     GPS sensors return both a position and velocity reading. These two readings are derived using different processes, and the velocity is not simply derived from position history like you might think.
     Therefore using velocity information can reduce the overall error. [Nice summary](https://vboxautomotive.co.uk/index.php/en/how-does-it-work-gps-accuracy)
 
-
-## Equivalent Lap State Algorithm and Approach
+## Equivalent Lap State Algorithm
 
 As explained earlier, when each new GPS sample arrives we need to "cut" our stored reference lap at a representative time within the lap.
 
@@ -104,6 +103,7 @@ Things to note:
 - For Method 2 in a corner, it might not be correct to say that one car on the inside and one on the outside are "comparable". But we can more easily assume lateral position on a straight doesn't have an impact. And drivers should be too busy to read the value during a corner anyway!
 - This example is contrived with a huge change in direction. For more realistic data the curves will approach linear and the solution will take fewer iterations to find.
 - In a corner, Method 1 and Method 2 may produce different results. As is the case in the visualisation.
+- Predictions done with Method 2 will become less predictable if vehicles heading is erratic.
 
 I went with Method 2, because it seemed much more amenable to computational solutions.
 
@@ -122,17 +122,16 @@ This equation should reach 0 when the time from the reference lap produces a veh
 
 # The Implementation
 
+Considerations:
+- The formulas are very large, so I used Julia to do the substitution and autocoding to C.
+- The ESP32v3 only has hardware support for floats, not doubles. So I needed to be careful to use the `fpow` instead of `pow`, for example. To ensure all the floating point maths is accelerated.
+- Generating test data to test the algorithm on a laptop was invaluable. Debugging on target is very hard for maths problems.
+- Uses the `-Ofast` clang argument, fusing floating point operations and reducing instructions by two thirds.
+
+
 {screenshot of the lap test data and the stdout}
 
 {code sample, from the repo}
-
-Uses Julia
-
-Results are around 3 iterations for test data.
-
-Uses floats for esp32 optimisations
-Uses -Ofast, fusing floating point operations and reducing instructions by two thirds.
-
 
 # The Hardware
 
@@ -152,5 +151,3 @@ Unfortunately it did go somewhere, although as the day progressed we cobbled it 
 <iframe width="560" height="315" src="https://www.youtube.com/embed/fwtsO8ZoLiw?si=4_dtyzdxjEijNT2K&amp;start=9588" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 
 (I'm the driver who didn't notice their gloves were missing... Woops!)
-
-We didn't finish the code in time, we only had datalogging. Which actually didn't work properly either.
