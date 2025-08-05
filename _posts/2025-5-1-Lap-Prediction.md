@@ -69,12 +69,12 @@ $$ f(t) = \mathtt{x0} + \frac{t^{3} \left( 2 \mathtt{x0} - 2 \mathtt{x1} + \math
 I went with the kinematic interpolation, because it improves performance, and makes the algorithm more interesting to me!
 
 [^2]: 
-    I discovered a cubic interpolation method uses constant acceleration assumptions.
+    I found an existing cubic interpolation method that uses constant acceleration assumptions:
 
     [The paper](https://www.researchgate.net/publication/283199429_Kinematic_interpolation_of_movement_data)  
     [The code](https://github.com/jedalong/pathinterpolatr)
 
-    It seems a bit too obscure, for something so generally applicable. Perhaps karman filters are used for this conventionally? Despite the unanswered questions, I pushed ahead with the first thing I liked. For fun!
+    It seems a bit too obscure. At least for something so generally applicable. Perhaps karman filters are used for this conventionally? Despite the unanswered questions, I pushed ahead with the first thing I liked. For fun!
 
 [^3]:
     Why capture velocity information?
@@ -86,10 +86,12 @@ I went with the kinematic interpolation, because it improves performance, and ma
 
 As explained earlier, when each new GPS sample arrives we need to "cut" our stored reference lap at a representative time within the lap.
 
-The reference lap time that "represents", or matches the new position and velocity we've received most closely is a open to interpretation.  
-I see at least two approaches, finding the time during the reference lap that is:
+The reference lap time that "represents", or matches the new position and velocity we've received most closely is open to interpretation.
+
+I see at least two approaches:  
+Finding the time during the reference lap that is...
 1. Closest overall to the new sample, a simple 2D distance calculation ignoring current velocity
-2. Closest to the lateral axis, the point on the reference lap that lies on a line perpendicular to the current heading
+2. Closest to the lateral axis, finding the point on the reference lap that lies on a line perpendicular to the current heading
 
 I've compared the two approaches here:
 [![Rootfinding](/assets/img/Datalogger Rootfinding.gif)](/assets/img/Datalogger Rootfinding.gif)
@@ -101,9 +103,9 @@ Things to note:
 - Method 1 is also more vulnerable to false convergence, you don't know you've found the best solution available. Whereas for Method 2 any solution is okay.
 - For Method 2, multiple solutions will exist, as the tracks are usually loops. But if you start your search at the previous solution, you should hit the correct one reliably.
 - For Method 2 in a corner, it might not be correct to say that one car on the inside and one on the outside are "comparable". But we can more easily assume lateral position on a straight doesn't have an impact. And drivers should be too busy to read the value during a corner anyway!
-- This example is contrived with a huge change in direction. For more realistic data the curves will approach linear and the solution will take fewer iterations to find.
+- This example is contrived with a huge change in direction. For more realistic data the curves will become more linear, and the solution will take fewer iterations to find.
 - In a corner, Method 1 and Method 2 may produce different results. As is the case in the visualisation.
-- Predictions done with Method 2 will become less predictable if vehicles heading is erratic.
+- Method 2 will become less predictable and accurate if the vehicles heading is erratic.
 
 I went with Method 2, because it seemed much more amenable to computational solutions.
 
@@ -112,7 +114,7 @@ To use a nonlinear solver we need a formula for the distance between a point (th
 $$ f() = \left(  - \mathtt{Px} + \mathtt{tx} \right) sind\left( \mathtt{heading} \right) + \left(  - \mathtt{Py} + \mathtt{ty} \right) cosd\left( \mathtt{heading} \right) $$  
 [Source](https://en.wikipedia.org/wiki/Distance_from_a_point_to_a_line#Line_defined_by_point_and_angle)
 
-I've modified the formula so that it takes heading angle, (which is 90 degrees from line angle) and so distances to points in the "heading" direction are positive.
+I've modified the formula so that it takes heading angle, (which is 90 degrees from line angle) and to ensure distances in the "heading" direction are positive.
 
 The interpolation formula is substituted into the distance formula to produce a very large equation[^4] used in the plot above.
 
@@ -128,10 +130,7 @@ Considerations:
 - Generating test data to test the algorithm on a laptop was invaluable. Debugging on target is very hard for maths problems.
 - Uses the `-Ofast` clang argument, fusing floating point operations and reducing instructions by two thirds.
 
-
-{screenshot of the lap test data and the stdout}
-
-{code sample, from the repo}
+> Contact me for some of the code, if you'd like to see it.
 
 # The Hardware
 
